@@ -1,3 +1,4 @@
+export const ROCK_HEIGHT = 0;
 export const BOMB_SPEED = 100;
 export const BLAST_RADIUS = 4.5;
 export const ROUND_SECONDS = 60;

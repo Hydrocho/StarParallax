@@ -1,5 +1,6 @@
+import { ScanOverlay } from './scan-overlay.js';
 import * as THREE from './vendor/three.module.min.js';
-import { BLAST_RADIUS } from './game.mjs';
+import { BLAST_RADIUS, ROCK_HEIGHT } from './game.mjs';
 
 const random = seed => () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
 export class FlightScene {
@@ -14,6 +15,7 @@ export class FlightScene {
     const sun = new THREE.DirectionalLight(0xffe3c2, 4); sun.position.set(-40, 30, 10); this.scene.add(sun);
     const rim = new THREE.DirectionalLight(0x4cd2dd, 3); rim.position.set(60, -5, -150); this.scene.add(rim);
     this.addBackground();
+    this.scanOverlay = new ScanOverlay(); this.scene.add(this.scanOverlay);
     this.rockMeshes = new Map(); this.effects = [];
     this.bomb = new THREE.Mesh(new THREE.SphereGeometry(0.45, 14, 10), new THREE.MeshBasicMaterial({ color: 0xffdfaa }));
     this.bomb.visible = false; this.scene.add(this.bomb);
@@ -56,6 +58,31 @@ export class FlightScene {
     const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: [0x9a9185, 0x798c99, 0x91858b, 0x888273, 0x7d9196, 0x9d8572][rock.id % 6], roughness: 0.93, flatShading: true }));
     this.scene.add(mesh); return mesh;
   }
+  pickTarget(rocks, observerX) {
+    if (!rocks.length) return null;
+    const candidate = [...rocks].sort((a, b) =>
+      Math.abs(Math.atan2(a.x - observerX, a.depth)) - Math.abs(Math.atan2(b.x - observerX, b.depth)) || a.depth - b.depth)[0];
+    const meshes = [];
+    for (const rock of rocks) {
+      const mesh = this.rockMeshes.get(rock.id);
+      if (!mesh) continue;
+      mesh.userData.rockId = rock.id;
+      mesh.position.set(rock.x, ROCK_HEIGHT, -rock.depth);
+      mesh.updateMatrixWorld(true);
+      meshes.push(mesh);
+    }
+    this.targetRay ??= new THREE.Raycaster();
+    const origin = new THREE.Vector3(observerX, ROCK_HEIGHT, 0);
+    const firstHit = direction => {
+      this.targetRay.set(origin, direction.normalize());
+      const hit = this.targetRay.intersectObjects(meshes, false)[0];
+      return hit ? rocks.find(rock => rock.id === hit.object.userData.rockId) : null;
+    };
+    // Prefer the first visible rock under the crosshair, not its center angle.
+    // When aiming between rocks, also check occlusion toward the nearest center.
+    return firstHit(new THREE.Vector3(0, 0, -1)) ||
+      firstHit(new THREE.Vector3(candidate.x - observerX, 0, -candidate.depth)) || candidate;
+  }
   reset() {
     for (const mesh of this.rockMeshes.values()) this.dispose(mesh);
     this.rockMeshes.clear();
@@ -66,27 +93,28 @@ export class FlightScene {
   explode(event) {
     const material = new THREE.MeshBasicMaterial({ color: event.kind === 'hit' ? 0x80ffda : 0xffad65, wireframe: true, transparent: true, opacity: 0.9 });
     const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(BLAST_RADIUS, 2), material);
-    mesh.position.set(event.x, 0, -event.depth); this.scene.add(mesh);
+    mesh.position.set(event.x, ROCK_HEIGHT, -event.depth); this.scene.add(mesh);
     this.effects.push({ mesh, age: 0 });
     const ring = new THREE.Mesh(new THREE.TorusGeometry(BLAST_RADIUS, 0.12, 6, 48), new THREE.MeshBasicMaterial({ color: event.kind === 'hit' ? 0xaaffdf : 0xffd098, transparent: true, opacity: 1 }));
     ring.position.copy(mesh.position); this.scene.add(ring); this.effects.push({ mesh: ring, age: 0 });
   }
-  project(x, depth, y = 0) {
+  project(x, depth, y = ROCK_HEIGHT) {
     const v = new THREE.Vector3(x, y, -depth).project(this.camera);
     return { x: (v.x * 0.5 + 0.5) * this.width, y: (0.5 - v.y * 0.5) * this.height };
   }
-  render(game, dt) {
+  render(game, dt, measurement = null) {
+    this.scanOverlay.update(measurement, game, this.camera.aspect);
     this.camera.position.x = game.x; this.camera.updateMatrixWorld();
     const ids = new Set(game.rocks.map(rock => rock.id));
     for (const [id, mesh] of this.rockMeshes) if (!ids.has(id)) { this.dispose(mesh); this.rockMeshes.delete(id); }
     for (const rock of game.rocks) {
       let mesh = this.rockMeshes.get(rock.id);
       if (!mesh) { mesh = this.makeRock(rock); this.rockMeshes.set(rock.id, mesh); }
-      mesh.position.set(rock.x, 0, -rock.depth);
+      mesh.position.set(rock.x, ROCK_HEIGHT, -rock.depth);
     }
     this.bomb.visible = !!game.bomb;
     if (game.bomb) {
-      this.bomb.position.set(game.bomb.x, -0.5 * (1 - game.bomb.depth / game.bomb.range), -Math.max(1, game.bomb.depth));
+      this.bomb.position.set(game.bomb.x, -0.5 + (ROCK_HEIGHT + 0.5) * Math.min(1, game.bomb.depth / game.bomb.range), -Math.max(1, game.bomb.depth));
       this.bombHalo.scale.setScalar(1 + Math.sin(game.elapsed * 25) * 0.15);
     }
     for (const effect of this.effects) {

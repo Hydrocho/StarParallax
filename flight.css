@@ -124,3 +124,61 @@
   70%{opacity:1}
   100%{opacity:0;transform:translate(-50%,calc(-50% - 20px))}
 }
+.mini-panel:not(.collapsed){width:260px;max-width:calc(100vw - 28px);background:#07121de8;padding:8px 12px}
+.mini-panel:not(.collapsed) svg{height:88px}
+.measure-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:5px}
+.measure-actions button{background:transparent;color:#adc3cf;font-size:10px;padding:7px 2px}
+.mini-heading button{min-height:36px;color:#87edda;font-size:11px}
+.charge-track{position:relative}
+#charge-guide{position:absolute;top:9px;bottom:9px;width:3.64%;min-width:5px;background:#87edda88;border:1px solid #baffec;z-index:1;pointer-events:none}
+#range-guide{color:#87edda;margin:3px 0;font-size:10px;line-height:1.5}
+#range-guide.on-target{color:#fff;background:#287e66;border-radius:4px}
+@media(max-width:700px){.mini-panel:not(.collapsed){bottom:195px;width:250px}.mini-panel:not(.collapsed) svg{height:72px}#range-guide{font-size:9px}}
+@media(max-height:500px){.mini-panel:not(.collapsed){bottom:150px;left:16px;transform:none;width:235px}.mini-panel:not(.collapsed) svg{height:48px}}
+@media(max-width:700px) and (min-height:501px){.mini-panel:not(.collapsed){bottom:210px}}
+.measure-actions{pointer-events:auto}
+/* Transparent measurement HUD: the scenery stays visible through the panel. */
+.mini-panel:not(.collapsed){background:rgba(3,14,23,.16);backdrop-filter:none;border-color:#87edda40;box-shadow:none;text-shadow:0 1px 4px #000,0 0 8px #020813;width:280px}
+.mini-panel:not(.collapsed) svg{height:62px}
+.mini-panel #parallax-hint{display:block;color:#baf9e9;font-size:12px;line-height:1.6;margin-top:8px}
+.mini-panel #scan-principle{display:block;color:#c0d5df;font-size:10px;line-height:1.6}
+.mini-heading button:disabled{opacity:.8;cursor:default}
+#scan-progress{display:block;width:100%;height:4px;appearance:none;border:0;background:#96cfc222;border-radius:4px;overflow:hidden}
+#scan-progress::-webkit-progress-bar{background:#96cfc222}
+#scan-progress::-webkit-progress-value{background:#87edda}
+#scan-progress::-moz-progress-bar{background:#87edda}
+@media(max-width:700px){.mini-panel:not(.collapsed){width:260px}.mini-panel:not(.collapsed) svg{height:54px}.mini-panel #parallax-hint{font-size:11px}}
+@media(max-height:500px){.mini-panel:not(.collapsed){left:50%;transform:translateX(-50%);bottom:145px;width:255px;padding:4px 10px}.mini-panel:not(.collapsed) svg{height:42px}.mini-panel #scan-principle{font-size:9px}.measure-actions{margin-top:0}.mini-panel #parallax-hint{margin:2px 0;font-size:10px}}
+.mini-panel:not(.collapsed) svg.distance-diagram{height:158px}
+@media(max-width:700px){.mini-panel:not(.collapsed) svg.distance-diagram{height:145px}}
+@media(max-height:620px){.mini-panel:not(.collapsed):has(.distance-diagram){left:18px;bottom:155px;transform:none;width:250px}.mini-panel:not(.collapsed) svg.distance-diagram{height:112px}.mini-panel #scan-principle{font-size:9px;line-height:1.4}}
+/* The idle scan button belongs to the left movement control stack. */
+.left-controls .mini-panel.collapsed{position:static;transform:none;width:116px;min-width:0;margin-bottom:14px;padding:0;border-radius:9px;background:#102d3466;border-color:#87edda55}
+.left-controls .mini-panel.collapsed #map-toggle{width:100%;min-height:44px;padding:0 4px;color:#baf9e9}
+@media(max-width:700px){.left-controls .mini-panel.collapsed{width:76px;margin-bottom:11px}.left-controls .mini-panel.collapsed #map-toggle{font-size:10px}}
+@media(max-height:620px) and (min-width:701px){.left-controls .mini-panel.collapsed{width:95px;margin-bottom:7px}}
+@media(max-height:500px){.left-controls .mini-panel.collapsed{margin-bottom:4px}}
+/* Prominent scan action, paired with the amber bomb button. */
+.left-controls .mini-panel.collapsed{background:linear-gradient(145deg,#9af3df,#46b9ac);border:1px solid #b9fff0;box-shadow:0 0 24px #87edda24,inset 0 1px #ffffff55;border-radius:13px;text-shadow:none;overflow:hidden}
+.left-controls .mini-panel.collapsed #map-toggle{height:100px;min-height:100px;color:#082f30;font-size:13px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;letter-spacing:0}
+.left-controls .mini-panel.collapsed #map-toggle::before{content:'◎';font:32px/1 system-ui;color:#0b5051}
+.left-controls .mini-panel.collapsed #map-toggle::after{content:'↑ KEY / SCAN';font:8px monospace;letter-spacing:1px;color:#205c5a}
+.left-controls .mini-panel.collapsed:has(#map-toggle:hover:not(:disabled)){filter:brightness(1.1)}
+@media(max-width:700px){.left-controls .mini-panel.collapsed{border-radius:10px}.left-controls .mini-panel.collapsed #map-toggle{height:80px;min-height:80px;font-size:11px;gap:5px}.left-controls .mini-panel.collapsed #map-toggle::before{font-size:25px}.left-controls .mini-panel.collapsed #map-toggle::after{font-size:6px;letter-spacing:.5px}}
+@media(max-height:620px) and (min-width:701px){.left-controls .mini-panel.collapsed #map-toggle{height:73px;min-height:73px;gap:4px}.left-controls .mini-panel.collapsed #map-toggle::before{font-size:24px}}
+@media(max-height:500px){.left-controls .mini-panel.collapsed #map-toggle{height:65px;min-height:65px;gap:3px}.left-controls .mini-panel.collapsed #map-toggle::before{font-size:22px}}
+/* Survey geometry now lives in the 3D scene; keep only compact status here. */
+.mini-panel:not(.collapsed){width:260px!important;background:transparent;border:0;padding:3px 8px;box-shadow:none}
+.mini-panel:not(.collapsed) .mini-heading>span,.mini-panel #scan-principle,#measure-again{display:none!important}
+.mini-panel:not(.collapsed) .mini-heading{justify-content:flex-end}
+.mini-panel:not(.collapsed) .mini-heading button{min-height:25px;font-size:9px}
+.mini-panel #parallax-hint{text-align:center;font-size:13px;margin:4px 0}
+.measure-actions{justify-content:center}.measure-actions button{padding:4px;min-height:28px}
+@media(max-height:620px){.mini-panel:not(.collapsed){left:50%;transform:translateX(-50%);bottom:155px}}
+.mini-panel #scan-principle:not([hidden]){display:block!important;text-align:center;font-size:9px;color:#8ba9b7;margin:2px 0}
+#measurement-top-view{position:absolute;z-index:3;right:22px;top:48%;transform:translateY(-50%);width:210px;pointer-events:none;background:#07172226;border:1px solid #87edda25;border-radius:10px;text-shadow:0 1px 4px #000}
+#top-view-svg{display:block;width:100%;height:auto}
+@media(max-width:700px){#measurement-top-view{right:10px;top:40%;width:140px}}
+@media(max-height:500px){#measurement-top-view{top:43%;right:12px;width:120px}}
+
+#measurement-top-view{right:auto;bottom:auto;transform:none}

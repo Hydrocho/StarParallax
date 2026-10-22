@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { ScanOverlay } from '../scan-overlay.js';
+import { ParallaxScan } from '../measurement.mjs';
+test('world gates turn green after each fixed observation and guides clear with target',()=>{
+ const overlay=new ScanOverlay();const game={x:0,rocks:[{id:1,x:0,depth:100}]};
+ const scan=new ParallaxScan(1,{x:0,angle:0});
+ overlay.update(scan,game);assert.equal(overlay.visible,true);
+ assert.deepEqual(overlay.gates.map(g=>g.group.position.x),[-8,8]);
+ assert.equal(overlay.gates[0].rim.material.color.getHex(),0xff6767);
+ game.x=8;scan.sample({x:8,angle:Math.atan2(-8,100)});overlay.update(scan,game);
+ assert.equal(overlay.gates[1].check.visible,true);assert.equal(overlay.gates[0].check.visible,false);
+ assert.equal(overlay.gates[1].rim.material.color.getHex(),0x63f5a6);
+ assert.ok(overlay.arrow.visible);assert.ok(overlay.shift.visible);
+ game.x=-8;scan.sample({x:-8,angle:Math.atan2(8,100)});overlay.update(scan,game);
+ assert.ok(overlay.gates.every(g=>g.check.visible));assert.equal(overlay.arrow.visible,false);
+ game.rocks=[];overlay.update(scan,game);assert.equal(overlay.visible,false);
+ overlay.update(null,game);assert.equal(overlay.visible,false);
+});
+import { ParallaxHologram } from '../parallax-hologram.js';
+test('filled oblique model connects observers, rock and curved background',()=>{
+ const h=new ParallaxHologram();h.update(null,{x:0},1);assert.equal(h.visible,false);
+ h.update({origin:0,result:{x:0,depth:140}},{x:4},.46);
+ assert.equal(h.visible,true);assert.equal(h.front.geometry.attributes.position.count,3);
+ assert.ok(h.front.material.opacity>0 && h.front.material.opacity<1);
+ for(const dot of h.dots.slice(3))assert.ok(Math.abs(dot.position.x**2+(dot.position.z-6)**2-400)<.001);
+ const a=h.dots[0].position,r=h.dots[2].position,p=h.dots[3].position;
+ assert.ok(r.clone().sub(a).cross(p.clone().sub(a)).length()<1e-6);
+ assert.notEqual(h.content.rotation.y,0);
+});
