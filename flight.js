@@ -1,6 +1,9 @@
 import { FlightGame } from './game.mjs';
 import { BombCharge } from './charge.mjs';
 import { openLesson } from './lesson.js';
+import { readRecords, saveRecord } from './records.mjs';
+let recordsStorage;
+try { recordsStorage = window.localStorage; } catch { /* Storage may be blocked by browser settings. */ }
 const $ = id => document.getElementById(id);
 const game = new FlightGame();
 const charge = new BombCharge();
@@ -16,6 +19,70 @@ function direction() {
 function notify(text, miss = false) {
   $('toast').textContent = text; $('toast').classList.add('visible'); $('toast').classList.toggle('miss', miss); toastUntil = performance.now() + 4200;
 }
+function triggerCombatScore(event) {
+  const container = $('combat-score-container');
+  if (!container) return;
+
+  let posX = window.innerWidth / 2;
+  let posY = window.innerHeight * 0.38;
+  if (scene && typeof scene.project === 'function') {
+    const proj = scene.project(event.x, event.depth);
+    if (Number.isFinite(proj.x) && Number.isFinite(proj.y)) {
+      const marginX = Math.min(140, window.innerWidth * 0.22);
+      posX = Math.max(marginX, Math.min(window.innerWidth - marginX, proj.x));
+      posY = Math.max(90, Math.min(window.innerHeight - 170, proj.y - 25));
+    }
+  }
+
+  const isMulti = event.count >= 2;
+  const isLong = !isMulti && (event.distanceBonus >= 15);
+  let badgeText = '✦ HIT! ✦';
+  let badgeClass = 'badge-normal';
+  if (isMulti) {
+    badgeText = `🔥 ${event.count}X MULTI CRUSH! 🔥`;
+    badgeClass = 'badge-multi';
+  } else if (isLong) {
+    badgeText = '⚡ LONG RANGE HIT! ⚡';
+    badgeClass = 'badge-long';
+  }
+
+  const popup = document.createElement('div');
+  popup.className = `combat-popup ${isMulti ? 'is-multi' : isLong ? 'is-long' : 'is-normal'}`;
+  popup.style.left = `${posX}px`;
+  popup.style.top = `${posY}px`;
+
+  const basePoints = (event.count || 1) * 10;
+  popup.innerHTML = `
+    <div class="combat-fx-ring"></div>
+    <div class="combat-badge ${badgeClass}">${badgeText}</div>
+    <div class="combat-score-row">
+      <span class="combat-plus">+</span><span class="combat-num">${event.points}</span><span class="combat-pts">PTS</span>
+    </div>
+    <div class="combat-breakdown">
+      <span class="breakdown-chip">기본 ${basePoints}</span>
+      ${event.distanceBonus > 0 ? `<span class="breakdown-plus">+</span><span class="breakdown-chip bonus">거리 보너스 ${event.distanceBonus}</span>` : ''}
+    </div>
+  `;
+
+  container.appendChild(popup);
+  setTimeout(() => popup.remove(), 1200);
+
+  const cockpit = $('cockpit');
+  if (cockpit) {
+    cockpit.classList.remove('hit-shake');
+    void cockpit.offsetWidth;
+    cockpit.classList.add('hit-shake');
+    setTimeout(() => cockpit.classList.remove('hit-shake'), 160);
+  }
+
+  const scoreEl = $('score');
+  if (scoreEl) {
+    scoreEl.classList.remove('score-bounce');
+    void scoreEl.offsetWidth;
+    scoreEl.classList.add('score-bounce');
+    setTimeout(() => scoreEl.classList.remove('score-bounce'), 350);
+  }
+}
 function setUI() {
   const playing = game.status === 'playing';
   $('start-card').hidden = game.status !== 'ready';
@@ -26,7 +93,7 @@ function setUI() {
   $('pause').disabled = !['playing', 'paused'].includes(game.status) || !scene;
   $('pause').textContent = playing ? 'Ⅱ' : '▷';
   $('pause').setAttribute('aria-label', playing ? '일시 정지' : '비행 계속하기');
-  $('score').innerHTML = `${String(game.kills).padStart(2, '0')} <small>개</small>`;
+  $('score').innerHTML = `${String(game.score).padStart(2, '0')} <small>점</small>`;
   const seconds = Math.ceil(game.remaining);
   $('timer').textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
   $('timer').setAttribute('aria-label', `남은 시간 ${seconds}초`);
@@ -36,13 +103,14 @@ function setUI() {
   if (game.status === 'finished') {
     $('result-title').textContent = '60초 시차 탐사 완료!';
     $('result-copy').textContent = '같은 거리만큼 움직일 때 가까운 바위가 더 크게 어긋납니다. 겉보기 크기와 실제 거리는 다르다는 것도 기억하세요.';
-    $('result-stats').textContent = `파괴 ${game.kills}개 · 발사 ${game.shots}회`;
+    $('result-stats').textContent = `${game.score}점 · 파괴 ${game.kills}개 · 발사 ${game.shots}회`;
   }
 }
 function start() { if (!scene) return; game.start(); lastTime = performance.now(); snapshot = null; setUI(); notify('60초 도전! 좌우로 관측하고, 거리를 맞춰 최대한 많이 부수세요.'); }
 function restart() {
   clearInput(); game.reset(); scene?.reset(); lastEventId = 0; snapshot = null;
-  $('toast').classList.remove('visible'); displayedRange = 20; updateCharge(); start();
+  $('toast').classList.remove('visible'); displayedRange = 20; updateCharge();
+  $('combat-score-container')?.replaceChildren(); start();
 }
 function pause() { clearInput(); game.pause(); setUI(); }
 function resume() { if (document.querySelector('dialog[open]')) return; game.resume(); lastTime = performance.now(); setUI(); }
@@ -110,9 +178,26 @@ $('map-toggle').addEventListener('click', () => {
 });
 function showDialog(kind) {
   dialogWasPlaying = game.status === 'playing'; pause();
-  if (kind === 'lesson') openLesson(); else $('guide-dialog').showModal();
+  if (kind === 'lesson') openLesson();
+  else if (kind === 'records') { renderRecords(); $('records-dialog').showModal(); }
+  else $('guide-dialog').showModal();
   setUI();
 }
+function renderRecords() {
+  const today = new Date();
+  $('records-date').textContent = today.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+  const records = readRecords(recordsStorage, today);
+  $('records-list').replaceChildren(...records.map((record, index) => {
+    const row = document.createElement('li');
+    const rank = document.createElement('span'); rank.textContent = `${index + 1}위`;
+    const score = document.createElement('strong'); score.textContent = `${record.score}점`;
+    const time = document.createElement('time'); time.textContent = new Date(record.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    row.append(rank, score, time); return row;
+  }));
+  $('records-empty').hidden = records.length > 0;
+}
+$('records-open').addEventListener('click', () => showDialog('records'));
+$('result-records').addEventListener('click', () => showDialog('records'));
 $('help').addEventListener('click', () => showDialog('guide'));
 $('lesson-open').addEventListener('click', () => showDialog('lesson'));
 $('result-lesson').addEventListener('click', () => showDialog('lesson'));
@@ -158,10 +243,20 @@ function frame(time) {
       lastEventId = game.lastEvent.id;
       const event = game.lastEvent;
       if (event.kind === 'hit' || event.kind === 'miss') scene.explode(event);
-      if (event.kind === 'hit') { notify(`정확한 거리! 바위 ${event.count}개 파괴`); snapshot = null; }
+      if (event.kind === 'hit') {
+        notify(`바위 ${event.count}개 파괴 · +${event.points}점 (거리 보너스 +${event.distanceBonus}점)`);
+        triggerCombatScore(event);
+        snapshot = null;
+      }
       else if (event.kind === 'miss') notify(event.hint, true);
     }
-    if (game.status !== previousStatus) clearInput();
+    if (game.status !== previousStatus) {
+      clearInput();
+      if (game.status === 'finished') {
+        const saved = saveRecord(recordsStorage, game.score);
+        $('record-save-status').textContent = saved ? '오늘의 TOP 5 기록을 저장했습니다.' : '브라우저 저장소를 사용할 수 없어 기록을 저장하지 못했습니다.';
+      }
+    }
     scene.render(game, game.status === 'playing' ? dt : 0);
     if (time - lastScan > 80) { setUI(); updateScan(); lastScan = time; }
     if (time > toastUntil) $('toast').classList.remove('visible');

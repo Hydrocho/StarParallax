@@ -4,7 +4,7 @@ export const ROUND_SECONDS = 60;
 export class FlightGame {
   constructor() { this.reset(); }
   reset() {
-    this.status = 'ready'; this.x = 0; this.kills = 0;
+    this.status = 'ready'; this.x = 0; this.kills = 0; this.score = 0;
     this.shots = 0; this.bomb = null; this.elapsed = 0;
     this.eventId = 0; this.lastEvent = null;
     this.nextRockId = 0; this.rocks = [];
@@ -57,9 +57,12 @@ export class FlightGame {
       const hits = this.rocks.filter(rock => Math.hypot(rock.x - bomb.x, rock.depth - bomb.range) <= rock.radius + BLAST_RADIUS);
       const nearest = this.rocks.reduce((best, rock) => !best || Math.hypot(rock.x - bomb.x, rock.depth - bomb.range) < Math.hypot(best.x - bomb.x, best.depth - bomb.range) ? rock : best, null);
       const hint = !nearest ? '' : Math.abs(nearest.x - bomb.x) > nearest.radius + BLAST_RADIUS ? '좌우 조준을 먼저 맞춰 보세요.' : nearest.depth > bomb.range ? '너무 가까이서 터졌어요. 폭발 거리를 늘려 보세요.' : '너무 멀리서 터졌어요. 폭발 거리를 줄여 보세요.';
+      const distanceBonus = hits.reduce((sum, rock) => sum + Math.floor(rock.depth / 10), 0);
+      const points = hits.length * 10 + distanceBonus;
+      this.score += points;
       this.rocks = this.rocks.filter(rock => !hits.includes(rock)); this.kills += hits.length;
       for (const destroyed of hits) this.rocks.push(this.createRock(destroyed));
-      this.emit({ kind: hits.length ? 'hit' : 'miss', x: bomb.x, depth: bomb.range, count: hits.length, hint });
+      this.emit({ kind: hits.length ? 'hit' : 'miss', x: bomb.x, depth: bomb.range, count: hits.length, points, distanceBonus, hint });
       this.bomb = null;
       if (dt > until) this.advance(dt - until, direction);
     }
