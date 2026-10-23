@@ -26,6 +26,7 @@ with sync_playwright() as p:
  move('KeyD',300)
  page.screenshot(path='.preview/scan-crossing.png')
  assert '왼쪽' in page.locator('#parallax-hint').inner_text()
+ assert page.locator('#charge-guide').is_hidden()
  assert page.locator('#target-code').inner_text()==target
  move('KeyA',1000)
  assert '140 u' in page.locator('#parallax-hint').inner_text(),page.locator('#parallax-hint').inner_text()
@@ -48,6 +49,7 @@ with sync_playwright() as p:
  def hold(selector,ms):
   page.locator(selector).hover();page.mouse.down();page.clock.run_for(ms);page.mouse.up();page.clock.run_for(100)
  hold('#move-left',500);assert '오른쪽' in page.locator('#parallax-hint').inner_text()
+ assert page.locator('#charge-guide').is_hidden()
  hold('#move-right',1000);assert '140 u' in page.locator('#parallax-hint').inner_text()
  assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
  panel=page.locator('#mini-panel').bounding_box();fire=page.locator('#fire').bounding_box()
@@ -61,6 +63,7 @@ with sync_playwright() as p:
  assert page.locator('#measurement-top-view').is_hidden()
  assert not errors,errors
  b.close()
- print('PASS: front-only trigger, automatic 16u scan both directions, progress, pause, distance and angle, guided hit, transparent HUD, mobile pointer controls, cancellation')
+ print('PASS: front-only trigger, two-ended scan with central ring, progress, pause, distance and angle, guided hit, transparent HUD, mobile pointer controls, cancellation')
+
 
 

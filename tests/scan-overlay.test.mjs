@@ -11,7 +11,7 @@ test('world gates turn green after each fixed observation and guides clear with 
  game.x=8;scan.sample({x:8,angle:Math.atan2(-8,100)});overlay.update(scan,game);
  assert.equal(overlay.gates[1].check.visible,true);assert.equal(overlay.gates[0].check.visible,false);
  assert.equal(overlay.gates[1].rim.material.color.getHex(),0x63f5a6);
- assert.ok(overlay.arrow.visible);assert.ok(overlay.shift.visible);
+ assert.equal(overlay.arrow.visible,true);assert.equal(overlay.center.position.x,scan.origin);assert.ok(overlay.shift.visible);
  game.x=-8;scan.sample({x:-8,angle:Math.atan2(8,100)});overlay.update(scan,game);
  assert.ok(overlay.gates.every(g=>g.check.visible));assert.equal(overlay.arrow.visible,false);
  game.rocks=[];overlay.update(scan,game);assert.equal(overlay.visible,false);

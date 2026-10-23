@@ -182,3 +182,4 @@
 @media(max-height:500px){#measurement-top-view{top:43%;right:12px;width:120px}}
 
 #measurement-top-view{right:auto;bottom:auto;transform:none}
+.orbit-playback + .star-distance-control{margin-top:20px}

@@ -20,6 +20,10 @@ export class ScanOverlay extends THREE.Group {
     const line = color => {const obj=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineBasicMaterial({color,transparent:true,opacity:.55}));this.add(obj);return obj;};
     this.rays=[line(0x8caeff),line(0x87ffbc)];this.shift=line(0xffcc94);
     this.marks=[0x8caeff,0x87ffbc].map(color=>{const m=new THREE.Mesh(new THREE.RingGeometry(25,32,32),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.85,depthWrite:false,depthTest:false}));this.add(m);return m;});
+    this.center = new THREE.Group();
+    const centerRing = new THREE.Mesh(new THREE.RingGeometry(1.05,1.15,48),new THREE.MeshBasicMaterial({color:0x87edda,transparent:true,opacity:.85,side:THREE.DoubleSide,depthWrite:false}));
+    const centerDot = new THREE.Mesh(new THREE.CircleGeometry(.16,16),new THREE.MeshBasicMaterial({color:0x87edda}));
+    this.center.add(centerRing,centerDot);this.add(this.center);
     this.visible=false;
   }
   segment(line,a,b) {
@@ -31,8 +35,10 @@ export class ScanOverlay extends THREE.Group {
     const side=scan.side || Math.sign(game.x-scan.origin);
     const progress=scan.progress(game.x);
     const guideDepth=Math.max(32,24/(Math.tan(29*Math.PI/180)*aspect));
+    this.center.position.set(scan.origin,-guideDepth*.09,-guideDepth);
+    this.center.scale.setScalar(guideDepth/42);
     for(const gate of this.gates) {
-      const done=!!scan.result || (scan.a && gate.side===scan.side);
+      const done=!!scan.result || (!!scan.a && gate.side===scan.side);
       const active=!done && (scan.a ? gate.side===-scan.side : (!side || gate.side===side));
       const color=done?0x63f5a6:0xff6767;
       gate.group.position.set(scan.origin+gate.side*8,-guideDepth*.09,-guideDepth);

@@ -230,8 +230,9 @@ function advanceMeasurement() {
   const phase = measurement.phase;
   measurement.sample({ x: game.x, angle: Math.atan2(target.x - game.x, target.depth) });
   if (measurement.phase !== phase) {
-    if (measurement.result) notify('✓ 측정 완료');
-    else notify(measurement.side > 0 ? '✓ 관측 A · ← 반대쪽으로' : '✓ 관측 A · 반대쪽으로 →');
+    if (measurement.result) notify('✓ 양쪽 관측 완료');
+    else notify(measurement.side > 0 ? '✓ 오른쪽 완료 · ← 반대쪽으로' : '✓ 왼쪽 완료 · 반대쪽으로 →');
+
     updateScan();
   }
 }

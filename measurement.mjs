@@ -3,7 +3,7 @@
 export function triangulate(a, b) {
   const baseline = b.x - a.x;
   const shift = Math.tan(a.angle) - Math.tan(b.angle);
-  if (![a.x, b.x, a.angle, b.angle].every(Number.isFinite) || Math.abs(baseline) < 8 || Math.abs(shift) < 0.005) return null;
+  if (![a.x, b.x, a.angle, b.angle].every(Number.isFinite) || Math.abs(baseline) < 8 - 1e-9 || Math.abs(shift) < 0.005) return null;
   const depth = baseline / shift;
   if (!Number.isFinite(depth) || depth < 20 || depth > 240) return null;
   return { depth, x: a.x + depth * Math.tan(a.angle), seconds: (depth - 20) / 110 };
